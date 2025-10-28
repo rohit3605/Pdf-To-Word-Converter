@@ -5,11 +5,20 @@ import tempfile
 import os
 import time
 
+# --------------------------- #
+# PAGE CONFIGURATION
+# --------------------------- #
 st.set_page_config(page_title="PDF → Word Converter", page_icon="📄")
 
+# --------------------------- #
+# APP TITLE
+# --------------------------- #
 st.title("📄 PDF → Word Converter")
-st.write("Convert your PDF file into editable Word (DOCX) format easily!")
+st.write("Easily convert your PDF files into editable Word documents (DOCX).")
 
+# --------------------------- #
+# FILE UPLOADER
+# --------------------------- #
 uploaded_file = st.file_uploader("Upload a PDF file", type=["pdf"])
 
 if uploaded_file:
@@ -27,16 +36,29 @@ if uploaded_file:
                 time.sleep(0.1)
                 progress.progress(i + 10)
 
-            # Open PDF
+            # Open the PDF
             doc = fitz.open(pdf_path)
             word_doc = Document()
 
-            for page in doc:
-                text = page.get_text("text")
-                if text.strip():
-                    word_doc.add_paragraph(text)
+            for page_num, page in enumerate(doc, start=1):
+                # Extract text
+                text = page.get_text("text") or page.get_text("blocks") or ""
+
+                # Clean non-printable characters
+                clean_text = ''.join(ch for ch in text if ch.isprintable())
+                clean_text = clean_text.replace('\x00', '').strip()
+
+                if clean_text:
+                    try:
+                        word_doc.add_paragraph(clean_text)
+                    except Exception as e:
+                        st.warning(f"⚠️ Skipped a problematic section on page {page_num}: {e}")
+                else:
+                    word_doc.add_paragraph(f"[No readable text on page {page_num}]")
+
                 word_doc.add_page_break()
 
+            # Save Word file
             output_path = pdf_path.replace(".pdf", ".docx")
             word_doc.save(output_path)
 
@@ -55,7 +77,8 @@ if uploaded_file:
         finally:
             # Safe cleanup
             try:
-                os.remove(pdf_path)
+                if os.path.exists(pdf_path):
+                    os.remove(pdf_path)
                 if os.path.exists(output_path):
                     os.remove(output_path)
             except:
