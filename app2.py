@@ -1,8 +1,10 @@
 import streamlit as st
 from docx import Document
+from docx.shared import Inches, Pt
 import fitz  # PyMuPDF
 import tempfile
 import os
+import io
 import time
 
 # --------------------------- #
@@ -13,8 +15,8 @@ st.set_page_config(page_title="PDF → Word Converter", page_icon="📄")
 # --------------------------- #
 # APP TITLE
 # --------------------------- #
-st.title("📄 PDF → Word Converter")
-st.write("Easily convert your PDF files into editable Word documents (DOCX).")
+st.title("📄 PDF → Word Converter with Images")
+st.write("Convert your PDF into an editable Word document (including text and line formatting).")
 
 # --------------------------- #
 # FILE UPLOADER
@@ -28,46 +30,55 @@ if uploaded_file:
 
     if st.button("🚀 Convert to Word"):
         progress = st.progress(0)
-        st.info("Converting your PDF to Word...")
+        st.info("Converting your PDF to Word (text + images)...")
 
         try:
-            # Simulate progress bar
-            for i in range(0, 100, 15):
+            for i in range(0, 100, 20):
                 time.sleep(0.1)
                 progress.progress(i + 10)
 
-            # Open the PDF
-            doc = fitz.open(pdf_path)
+            # Open PDF
+            pdf_doc = fitz.open(pdf_path)
             word_doc = Document()
 
-            for page_num, page in enumerate(doc, start=1):
-                # Extract text
-                text = page.get_text("text") or page.get_text("blocks") or ""
+            for page_num, page in enumerate(pdf_doc, start=1):
+                text = page.get_text("text") or ""
 
-                # Clean non-printable characters
-                clean_text = ''.join(ch for ch in text if ch.isprintable())
-                clean_text = clean_text.replace('\x00', '').strip()
+                # Split text into lines to preserve spacing
+                lines = text.split('\n')
+                for line in lines:
+                    clean_line = ''.join(ch for ch in line if ch.isprintable()).replace('\x00', '').strip()
+                    if clean_line:
+                        word_doc.add_paragraph(clean_line)
+                word_doc.add_paragraph("")  # extra line break between pages
 
-                if clean_text:
-                    try:
-                        word_doc.add_paragraph(clean_text)
-                    except Exception as e:
-                        st.warning(f"⚠️ Skipped a problematic section on page {page_num}: {e}")
-                else:
-                    word_doc.add_paragraph(f"[No readable text on page {page_num}]")
+                # Extract and add images
+                image_list = page.get_images(full=True)
+                if image_list:
+                    word_doc.add_paragraph("📸 Images on this page:")
+                    for img_index, img in enumerate(image_list, start=1):
+                        xref = img[0]
+                        base_image = pdf_doc.extract_image(xref)
+                        image_bytes = base_image["image"]
+
+                        image_stream = io.BytesIO(image_bytes)
+                        try:
+                            word_doc.add_picture(image_stream, width=Inches(5.5))
+                        except Exception as e:
+                            st.warning(f"⚠️ Could not add image {img_index} from page {page_num}: {e}")
 
                 word_doc.add_page_break()
 
-            # Save Word file
+            # Save final Word file
             output_path = pdf_path.replace(".pdf", ".docx")
             word_doc.save(output_path)
 
             with open(output_path, "rb") as f:
-                st.success("✅ Conversion complete!")
+                st.success("✅ Conversion complete (Text format preserved)!")
                 st.download_button(
                     label="📥 Download Word File",
                     data=f,
-                    file_name="converted.docx",
+                    file_name="converted_with_formatting.docx",
                     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 )
 
@@ -75,7 +86,6 @@ if uploaded_file:
             st.error(f"❌ Error: {e}")
 
         finally:
-            # Safe cleanup
             try:
                 if os.path.exists(pdf_path):
                     os.remove(pdf_path)
