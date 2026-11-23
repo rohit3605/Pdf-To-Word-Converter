@@ -1,42 +1,109 @@
-📄 PDF → Word Converter (with Images)
+# PDF to Word Converter
 
-A simple and powerful Streamlit web app that converts PDF files into editable Word (DOCX) documents — including both text and images.
+A Streamlit web application that converts PDF documents into editable Microsoft Word (DOCX) files using Python.
 
-⚙️ Built with Python, Streamlit, and PyMuPDF — lightweight, fast, and deployable anywhere!
+The converter extracts text from PDF pages and embeds extracted images into the generated Word document by default.
 
-🚀 Features
+## Features
 
-✅ Extracts clean text from PDF pages
-✅ Preserves images inside the Word file
-✅ Progress bar for conversion process
-✅ Works on both desktop & mobile
-✅ One-click download after conversion
-✅ Safe cleanup of temporary files
+- Extracts text from PDF pages
+- Converts extracted content into editable Word documents
+- Extracts and embeds images from PDFs
+- Processes PDF files directly in memory
+- Handles invalid, encrypted, and empty PDFs
+- Provides specific conversion error handling
+- Separates the conversion engine from the Streamlit UI
+- Includes automated tests for the conversion engine
 
-🧠 Tech Stack
+## Tech Stack
 
-Python 3.8+
+- Python
+- Streamlit
+- PyMuPDF
+- python-docx
+- pytest
 
-Streamlit – for web UI
+## Project Structure
 
-PyMuPDF (fitz) – for PDF reading and image extraction
+    .
+    ├── app2.py
+    ├── converter/
+    │   ├── __init__.py
+    │   ├── engine.py
+    │   └── exceptions.py
+    └── tests/
+        └── test_engine.py
 
-python-docx – for Word document creation
+## Implementation Improvements
 
-🏗️ How It Works
+This branch introduces improvements to the original conversion workflow:
 
-Upload your PDF file (.pdf)
+- **Modular architecture:** Separated PDF-to-DOCX conversion logic from the Streamlit UI into a dedicated conversion module.
+- **In-memory processing:** Replaced the temporary PDF file workflow with byte-based processing to avoid unnecessary disk writes.
+- **Error handling:** Introduced dedicated exceptions for invalid PDFs, encrypted PDFs, and conversion failures.
+- **Image handling:** Added image extraction and embedding support with a mechanism to handle recoverable image extraction errors.
+- **Testability:** Added automated tests for conversion behavior, input validation, image handling, and failure scenarios.
+- **UI integration:** Updated the Streamlit application to use the new conversion engine and provide meaningful error messages.
 
-Click Convert to Word
+## How It Works
 
-The app:
+1. Upload a PDF document.
+2. Click the conversion button.
+3. The conversion engine processes the uploaded PDF in memory.
+4. Text is extracted page by page.
+5. Embedded images are extracted and added to the Word document.
+6. The generated DOCX file is provided for download.
 
-Reads each page of the PDF
+## Limitations
 
-Extracts text (cleaning invalid XML characters)
+This converter focuses on extracting content, not reproducing the original PDF layout.
 
-Extracts embedded images
+- Original formatting, fonts, colors, and positioning are not preserved.
+- Extracted images are not placed at their original positions.
+- Complex tables and multi-column layouts may not retain their original structure.
+- Scanned PDFs without an embedded text layer are not OCR-processed.
+- The resulting Word document may differ significantly from the original PDF visually.
 
-Adds both text and images to a Word document
+## Setup and Installation
 
-You can then download the converted Word file
+### 1. Clone the repository
+
+    git clone https://github.com/rohit3605/Pdf-To-Word-Converter.git
+    cd Pdf-To-Word-Converter
+
+### 2. Create a virtual environment
+
+Windows PowerShell:
+
+    python -m venv .venv
+    .\.venv\Scripts\Activate.ps1
+
+### 3. Install dependencies
+
+    pip install -r requirements.txt
+
+If pytest is not included in the installed dependencies:
+
+    pip install pytest
+
+## Run the Application
+
+Start the Streamlit app:
+
+    streamlit run app2.py
+
+Open the local URL provided by Streamlit in your browser.
+
+## Run Tests
+
+Execute the automated test suite:
+
+    python -m pytest -q
+
+To run tests using the project's virtual environment directly on Windows:
+
+    .\.venv\Scripts\python.exe -m pytest -q
+
+## Disclaimer
+
+The generated Word document provides editable extracted content. The application is not designed to reproduce the original PDF's exact layout or formatting.
